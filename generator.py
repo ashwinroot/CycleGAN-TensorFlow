@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 import ops
 import utils
 
@@ -11,13 +12,14 @@ class Generator:
     self.is_training = is_training
     self.image_size = image_size
 
-  def __call__(self, input):
+  def __call__(self, input,class_number = -1):
     """
     Args:
       input: batch_size x width x height x 3
     Returns:
       output: same size as input
     """
+    print("At generator ",self.name," with ",class_number)
     with tf.variable_scope(self.name):
       # conv layers
       c7s1_32 = ops.c7s1_k(input, self.ngf, is_training=self.is_training, norm=self.norm,
@@ -33,6 +35,13 @@ class Generator:
       else:
         # 9 blocks for higher resolution
         res_output = ops.n_res_blocks(d128, reuse=self.reuse, n=9)      # (?, w/4, h/4, 128)
+      
+      print("res_output_shape",res_output.shape)
+      
+      if class_number!=-1:
+        class_feature = self.generate_class_feature(class_number)
+        res_output = tf.concat([res_output,class_feature],axis=3,name="concat")
+        print("res_output_shape",res_output.shape)
 
       # fractional-strided convolution
       u64 = ops.uk(res_output, 2*self.ngf, is_training=self.is_training, norm=self.norm,
@@ -55,3 +64,8 @@ class Generator:
     image = utils.batch_convert2int(self.__call__(input))
     image = tf.image.encode_jpeg(tf.squeeze(image, [0]))
     return image
+
+  def generate_class_feature(self,class_number):
+    array = np.zeros((1,64,64,3))
+    array[:,:,:,class_number] = 1
+    return array
