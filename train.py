@@ -31,6 +31,8 @@ tf.flags.DEFINE_string('X', 'data/tfrecords/apple.tfrecords',
                        'X tfrecords file for training, default: data/tfrecords/apple.tfrecords')
 tf.flags.DEFINE_string('Y', 'data/tfrecords/orange.tfrecords',
                        'Y tfrecords file for training, default: data/tfrecords/orange.tfrecords')
+tf.flags.DEFINE_string('Z', 'data/tfrecords/mango.tfrecords',
+                       'Z tfrecords file for training, default: data/tfrecords/mango.tfrecords')
 tf.flags.DEFINE_string('load_model', None,
                         'folder of saved model that you wish to continue training (e.g. 20170602-1936), default: None')
 
@@ -51,6 +53,7 @@ def train():
     cycle_gan = CycleGAN(
         X_train_file=FLAGS.X,
         Y_train_file=FLAGS.Y,
+        Z_train_file=FLAGS.Z,
         batch_size=FLAGS.batch_size,
         image_size=FLAGS.image_size,
         use_lsgan=FLAGS.use_lsgan,
@@ -101,8 +104,10 @@ def train():
 
         train_writer.add_summary(summary, step)
         train_writer.flush()
+        if step% 1000 == 0: #visualize and comment after
+          break
 
-        if step % 100 == 0:
+        if step % 10 == 0:
           logging.info('-----------Step %d:-------------' % step)
           logging.info('  G_loss   : {}'.format(G_loss_val))
           logging.info('  D_Y_loss : {}'.format(D_Y_loss_val))

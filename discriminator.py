@@ -24,7 +24,7 @@ class Discriminator:
       if class_number!=-1:
         class_feature = self.generate_class_feature(class_number)
         input = tf.concat([input,class_feature],axis=3,name="concat")
-        print("res_output_shape",input.shape)
+        print("input_descrimator",input.shape)
       C64 = ops.Ck(input, 64, reuse=self.reuse, norm=None,
           is_training=self.is_training, name='C64')             # (?, w/2, h/2, 64)
       C128 = ops.Ck(C64, 128, reuse=self.reuse, norm=self.norm,

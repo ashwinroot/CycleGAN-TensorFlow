@@ -11,6 +11,7 @@ class CycleGAN:
   def __init__(self,
                X_train_file='',
                Y_train_file='',
+               Z_train_file='',
                batch_size=1,
                image_size=256,
                use_lsgan=True,
@@ -45,6 +46,7 @@ class CycleGAN:
     self.beta1 = beta1
     self.X_train_file = X_train_file
     self.Y_train_file = Y_train_file
+    self.Z_train_file = Z_train_file
 
     self.is_training = tf.placeholder_with_default(True, shape=[], name='is_training')
 
@@ -65,24 +67,43 @@ class CycleGAN:
         image_size=self.image_size, batch_size=self.batch_size)
     Y_reader = Reader(self.Y_train_file, name='Y',
         image_size=self.image_size, batch_size=self.batch_size)
+    Z_reader = Reader(self.Z_train_file, name='Z',
+        image_size=self.image_size, batch_size=self.batch_size)
 
     x = X_reader.feed()
     y = Y_reader.feed()
-    c1 = 1
-    c2 = 2
-    cycle_loss = self.cycle_consistency_loss(self.G, self.F, x, y,c1,c2)
+    z = Z_reader.feed()
+    data = [x,y,z]
+    c = [0,1,2]
+
+    cycle_loss_1 = self.cycle_consistency_loss(self.G, self.F, x, y,c[0],c[1])
+    cycle_loss_2 = self.cycle_consistency_loss(self.G, self.F, y, z,c[1],c[2])
 
     # X -> Y
-    fake_y = self.G(x,c2)
-    G_gan_loss = self.generator_loss(self.D_Y, fake_y, use_lsgan=self.use_lsgan,c1=c2)
-    G_loss =  G_gan_loss + cycle_loss
-    D_Y_loss = self.discriminator_loss(self.D_Y, y, self.fake_y, use_lsgan=self.use_lsgan,c1=c2)
+    fake_y = self.G(x,c[1])
+    G_gan_loss_1 = self.generator_loss(self.D_Y, fake_y, use_lsgan=self.use_lsgan,c1=c[1])
+    G_loss =  G_gan_loss_1 + cycle_loss_1
+    D_Y_loss = self.discriminator_loss(self.D_Y, y, self.fake_y, use_lsgan=self.use_lsgan,c1=c[1])
+
+    
+    # Y -> Z
+    fake_z = self.G(y,c[2])
+    G_gan_loss_2 = self.generator_loss(self.D_Y, fake_z, use_lsgan=self.use_lsgan,c1=c[2])
+    G_loss +=  G_gan_loss_2 + cycle_loss_2
+    D_Y_loss += self.discriminator_loss(self.D_Y, z, self.fake_y, use_lsgan=self.use_lsgan,c1=c[2])
 
     # Y -> X
-    fake_x = self.F(y,c1)
-    F_gan_loss = self.generator_loss(self.D_X, fake_x, use_lsgan=self.use_lsgan,c1=c1)
-    F_loss = F_gan_loss + cycle_loss
-    D_X_loss = self.discriminator_loss(self.D_X, x, self.fake_x, use_lsgan=self.use_lsgan,c1=c1)
+    fake_x = self.F(y,c[0])
+    F_gan_loss_1 = self.generator_loss(self.D_X, fake_x, use_lsgan=self.use_lsgan,c1=c[0])
+    F_loss = F_gan_loss_1 + cycle_loss_1
+    D_X_loss = self.discriminator_loss(self.D_X, x, self.fake_x, use_lsgan=self.use_lsgan,c1=c[0])
+
+
+    # Z -> Y
+    fake_y = self.F(z,c[1])
+    F_gan_loss_2 = self.generator_loss(self.D_X, fake_y, use_lsgan=self.use_lsgan,c1=c[1])
+    F_loss += F_gan_loss_2 + cycle_loss_2
+    D_X_loss += self.discriminator_loss(self.D_X, y, self.fake_x, use_lsgan=self.use_lsgan,c1=c[1])
 
     # summary
     # tf.summary.histogram('D_Y/true', self.D_Y(y))
@@ -90,16 +111,33 @@ class CycleGAN:
     # tf.summary.histogram('D_X/true', self.D_X(x))
     # tf.summary.histogram('D_X/fake', self.D_X(self.F(y)))
 
-    tf.summary.scalar('loss/G', G_gan_loss)
+    tf.summary.scalar('loss/G_1', G_gan_loss_1)
+    tf.summary.scalar('loss/G_2', G_gan_loss_2)
+    tf.summary.scalar('loss/G', G_loss)
     tf.summary.scalar('loss/D_Y', D_Y_loss)
-    tf.summary.scalar('loss/F', F_gan_loss)
+    tf.summary.scalar('loss/F_1', F_gan_loss_1)
+    tf.summary.scalar('loss/F_2', F_gan_loss_2)
+    tf.summary.scalar('loss/F', G_loss)
     tf.summary.scalar('loss/D_X', D_X_loss)
-    tf.summary.scalar('loss/cycle', cycle_loss)
+    tf.summary.scalar('loss/cycle_1', cycle_loss_1)
+    tf.summary.scalar('loss/cycle_2', cycle_loss_2)
+    tf.summary.scalar('loss/cycle', cycle_loss_1 + cycle_loss_2)
 
-    tf.summary.image('X/generated', utils.batch_convert2int(self.G(x,c2)))
-    tf.summary.image('X/reconstruction', utils.batch_convert2int(self.F(self.G(x,c2),c1)))
-    tf.summary.image('Y/generated', utils.batch_convert2int(self.F(y,c1)))
-    tf.summary.image('Y/reconstruction', utils.batch_convert2int(self.G(self.F(y,c1),c2)))
+    tf.summary.image('X/generated_orange', utils.batch_convert2int(self.G(x,c[1])))
+    tf.summary.image('X/generated_mango', utils.batch_convert2int(self.G(y,c[2])))
+    tf.summary.image('X/reconstruction_apple', utils.batch_convert2int(self.F(self.G(x,c[1]),c[0])))
+    tf.summary.image('X/reconstruction_orange', utils.batch_convert2int(self.F(self.G(y,c[2]),c[1])))
+    tf.summary.image('X/transitive', utils.batch_convert2int(self.F(self.G(x,c[2]),c[0])))
+
+
+    tf.summary.image('Y/generated_apple', utils.batch_convert2int(self.F(y,c[0])))
+    tf.summary.image('Y/generated_orange', utils.batch_convert2int(self.F(z,c[2])))
+    tf.summary.image('Y/reconstruction_orange', utils.batch_convert2int(self.G(self.F(y,c[0]),c[1])))
+    tf.summary.image('Y/reconstruction_mango', utils.batch_convert2int(self.G(self.F(z,c[1]),c[2])))
+    tf.summary.image('Y/transitive', utils.batch_convert2int(self.G(self.F(z,c[0]),c[2])))
+
+    # tf.summary.image('Y/generated', utils.batch_convert2int(self.F(y,c1)))
+    # tf.summary.image('Y/reconstruction', utils.batch_convert2int(self.G(self.F(y,c1),c2)))
 
     return G_loss, D_Y_loss, F_loss, D_X_loss, fake_y, fake_x
 
