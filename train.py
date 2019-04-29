@@ -104,8 +104,7 @@ def train():
 
         train_writer.add_summary(summary, step)
         train_writer.flush()
-        if step% 1000 == 0: #visualize and comment after
-          break
+    
 
         if step % 10 == 0:
           logging.info('-----------Step %d:-------------' % step)
@@ -117,6 +116,9 @@ def train():
         if step % 10000 == 0:
           save_path = saver.save(sess, checkpoints_dir + "/model.ckpt", global_step=step)
           logging.info("Model saved in file: %s" % save_path)
+        
+        if (step+1) % 1000 == 0: #visualize and comment after
+          break
 
         step += 1
 
