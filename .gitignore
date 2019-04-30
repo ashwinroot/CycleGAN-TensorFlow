@@ -90,6 +90,7 @@ ENV/
 
 # data
 data/
+.idea/
 
 # checkpoints
 checkpoints/

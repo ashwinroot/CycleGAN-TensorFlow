@@ -128,7 +128,7 @@ class CycleGAN:
     tf.summary.image('X/reconstruction_apple', utils.batch_convert2int(self.F(self.G(x,c[1]),c[0])))
     tf.summary.image('X/reconstruction_orange', utils.batch_convert2int(self.F(self.G(y,c[2]),c[1])))
     tf.summary.image('X/transitive_full_cycle', utils.batch_convert2int(self.F(self.G(x,c[2]),c[0])))
-    tf.summary.image('X/transitive_half_cycle', utils.batch_convert2int(self.G(x,c[2]))
+    tf.summary.image('X/transitive_half_cycle', utils.batch_convert2int(self.G(x,c[2])))
 
 
     tf.summary.image('Y/generated_apple', utils.batch_convert2int(self.F(y,c[0])))

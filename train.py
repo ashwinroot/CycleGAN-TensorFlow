@@ -117,8 +117,8 @@ def train():
           save_path = saver.save(sess, checkpoints_dir + "/model.ckpt", global_step=step)
           logging.info("Model saved in file: %s" % save_path)
         
-        if (step+1) % 1000 == 0: #visualize and comment after
-          break
+        # if (step+1) % 1000 == 0: #visualize and comment after
+        #   break
 
         step += 1
 
