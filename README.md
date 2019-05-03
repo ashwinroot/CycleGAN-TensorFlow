@@ -1,7 +1,8 @@
 # CycleGAN-TensorFlow
-An implementation of CycleGan using TensorFlow (work in progress).
+An implementation of CycleGan using TensorFlow using class constrained mechanism. It also test the transitive nature of CycleGAN (work in progress).
 
 Original paper: https://arxiv.org/abs/1703.10593
+
 
 ## Results on test data
 
